@@ -1,0 +1,2 @@
+Positonal Embedding --> https://machinelearningmastery.com/a-gentle-introduction-to-positional-encoding-in-transformer-models-part-1/
+https://www.linkedin.com/pulse/deep-dive-positional-encodings-transformer-neural-network-ajay-taneja/
