@@ -17,7 +17,7 @@ class InputEmbeddings(nn.Module):
         """
         return self.embedding(x) * math.sqrt(self.d_model) #its in paper
     
-#STEP1: We will make positional embeddings        
+#STEP2: We will make positional embeddings        
 
 class PositionalEmbedding(nn.Module):
     def __init__(self,d_model,seq_len,dropout):
@@ -54,8 +54,70 @@ class PositionalEmbedding(nn.Module):
         x = x+(self.pe[:,x.shape[1], :]).requires_grad_(False)
         return self.dropout(x)
 
+#STEP3 LayerNormalization
+    class LayerNormalization(nn.Module):
+        """
+        Just need 1 parameter
+        eps = very small number that you need to give to the model
+        we need this because its in the formula for layer norm.
+
+        nn. Parameter --> is used to explicitly specify which tensors should 
+        be treated as the model's learnable parameters
+        """
+        def __init__(self, eps: float = 10**-6) -> None:
+            super().__init__()
+            self.eps = eps
+
+            self.aplha = nn.Parameter(torch.ones(1)) #will be multiplied
+            self.bias = nn.Parameter(torch.zeros(0)) # added
+        def forward(self,x):
+            mean = x.mean(dim = -1 , keepdim = True)
+            std = x.std(dim = -1 , keepdim = True)
+            return self.aplha*(x-mean)/(std +self.eps)+self.bias
+#STEP 4 FEED FORWARD LAYER
+    class FeedForwardBlock(nn.Module):
+        def __init__(self,d_model,d_ff,dropout):
+            super().__init__()
+            self.linear_1 = nn.Linear(d_model,d_ff) #w1 and b1
+            self.dropout = dropout
+            self.linear_2 = nn.Linear(d_ff,d_model) #w2 and b2
+        def forward(self,x):
+            return self.linear_2(self.dropout(torch.relu(self.linear_1(x))))
+            
+#Multihead Attention
+    class MultiheadAttentionblock(nn.Module):
+        """
+        In multihead attention we have a input (seq,d_model) we covert
+        it into 3 matroces Q K V its same as input and multiply by
+        Wq Wk Wv respectively.
+        (Q K V) x (Wq Wk Wv) = (Q' K' V') -split into--> Number of heads X Wo =MH-A(same seq as input)
+        self.h = number of heads
+        we have to divide the d_model with h thus d_model and h value should
+        be that they are divisible.
+        """
+        def __init__(self,d_model,h,dropout):
+            super().__init__()
+            self.d_model = d_model
+            self.h = h
+            self.dropout = nn.Dropout(dropout)
+            assert d_model % h == 0, "d model is not divisible by h"
+            self.d_k = d_model//h # as in paper
+            #Now defining the matrices for multiplication
+            self.w_q = nn.Linear(d_model,d_model)
+            self.w_k = nn.Linear(d_model,d_model)
+            self.w_v = nn.Linear(d_model,d_model)
+            self.w_0 = nn.Linear(d_model,d_model)
+        def forward(self,q,k,v,mask):
+            """
+            mask =  if we dont want to somewords to interact with other 
+            words we put their value to a small number.
+            """
+            
 
 
+        
+              
+         
     
     
         
