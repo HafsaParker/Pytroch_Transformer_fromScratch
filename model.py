@@ -55,68 +55,102 @@ class PositionalEmbedding(nn.Module):
         return self.dropout(x)
 
 #STEP3 LayerNormalization
-    class LayerNormalization(nn.Module):
-        """
-        Just need 1 parameter
-        eps = very small number that you need to give to the model
-        we need this because its in the formula for layer norm.
-
-        nn. Parameter --> is used to explicitly specify which tensors should 
-        be treated as the model's learnable parameters
-        """
-        def __init__(self, eps: float = 10**-6) -> None:
-            super().__init__()
-            self.eps = eps
-
-            self.aplha = nn.Parameter(torch.ones(1)) #will be multiplied
-            self.bias = nn.Parameter(torch.zeros(0)) # added
-        def forward(self,x):
-            mean = x.mean(dim = -1 , keepdim = True)
-            std = x.std(dim = -1 , keepdim = True)
-            return self.aplha*(x-mean)/(std +self.eps)+self.bias
+class LayerNormalization(nn.Module):
+    """
+    Just need 1 parameter
+    eps = very small number that you need to give to the model
+    we need this because its in the formula for layer norm.
+    nn. Parameter --> is used to explicitly specify which tensors should 
+    be treated as the model's learnable parameters
+    """
+    def __init__(self, eps: float = 10**-6) -> None:
+        super().__init__()
+        self.eps = eps
+        self.aplha = nn.Parameter(torch.ones(1)) #will be multiplied
+        self.bias = nn.Parameter(torch.zeros(0)) # added
+    def forward(self,x):
+        mean = x.mean(dim = -1 , keepdim = True)
+        std = x.std(dim = -1 , keepdim = True)
+        return self.aplha*(x-mean)/(std +self.eps)+self.bias
 #STEP 4 FEED FORWARD LAYER
-    class FeedForwardBlock(nn.Module):
-        def __init__(self,d_model,d_ff,dropout):
-            super().__init__()
-            self.linear_1 = nn.Linear(d_model,d_ff) #w1 and b1
-            self.dropout = dropout
-            self.linear_2 = nn.Linear(d_ff,d_model) #w2 and b2
-        def forward(self,x):
-            return self.linear_2(self.dropout(torch.relu(self.linear_1(x))))
+class FeedForwardBlock(nn.Module):
+    def __init__(self,d_model,d_ff,dropout):
+        super().__init__()
+        self.linear_1 = nn.Linear(d_model,d_ff) #w1 and b1
+        self.dropout = dropout
+        self.linear_2 = nn.Linear(d_ff,d_model) #w2 and b2
+    def forward(self,x):
+        return self.linear_2(self.dropout(torch.relu(self.linear_1(x))))
             
 #Multihead Attention
-    class MultiheadAttentionblock(nn.Module):
+class MultiheadAttentionblock(nn.Module):
+    """
+    In multihead attention we have a input (seq,d_model) we covert
+    it into 3 matroces Q K V its same as input and multiply by
+    Wq Wk Wv respectively.
+    (Q K V) x (Wq Wk Wv) = (Q' K' V') -split into--> Number of heads X Wo =MH-A(same seq as input)
+    self.h = number of heads
+    we have to divide the d_model with h thus d_model and h value should
+    be that they are divisible.
+    """
+    def __init__(self,d_model,h,dropout):
+        super().__init__()
+        self.d_model = d_model
+        self.h = h
+        self.dropout = nn.Dropout(dropout)
+        assert d_model % h == 0, "d model is not divisible by h"
+        self.d_k = d_model//h # as in paper
+        #Now defining the matrices for multiplication
+        self.w_q = nn.Linear(d_model,d_model)
+        self.w_k = nn.Linear(d_model,d_model)
+        self.w_v = nn.Linear(d_model,d_model)
+        self.w_0 = nn.Linear(d_model,d_model)
+    # Now we have to calculate the attention
+    @staticmethod
+    def attention(query,key,value,mask,dropout,nn.Dropout):
+        d_k  = query.shape[-1]
+        #now we will apply the formula
         """
-        In multihead attention we have a input (seq,d_model) we covert
-        it into 3 matroces Q K V its same as input and multiply by
-        Wq Wk Wv respectively.
-        (Q K V) x (Wq Wk Wv) = (Q' K' V') -split into--> Number of heads X Wo =MH-A(same seq as input)
-        self.h = number of heads
-        we have to divide the d_model with h thus d_model and h value should
-        be that they are divisible.
+        @ --> matrix multiplication in pytorch
+        before applying sofmax we hae to apply mask
         """
-        def __init__(self,d_model,h,dropout):
-            super().__init__()
-            self.d_model = d_model
-            self.h = h
-            self.dropout = nn.Dropout(dropout)
-            assert d_model % h == 0, "d model is not divisible by h"
-            self.d_k = d_model//h # as in paper
-            #Now defining the matrices for multiplication
-            self.w_q = nn.Linear(d_model,d_model)
-            self.w_k = nn.Linear(d_model,d_model)
-            self.w_v = nn.Linear(d_model,d_model)
-            self.w_0 = nn.Linear(d_model,d_model)
-        def forward(self,q,k,v,mask):
-            """
-            mask =  if we dont want to somewords to interact with other 
-            words we put their value to a small number.
-            """
-            
-
-
+        attention_scores = (query @ key.transpose(-2,-1))/math.sqrt(d_k) #last 2 dimenssion
+        if mask is not None:
+            attention_scores.masked_fill(mask == 0,-1e9)
+        attention_scores = attention_scores.softmax(dim=-1)
+        if dropout is not None:
+            attention_scores = dropout(attention_scores)
+        return (attention_scores @ value), attention_scores
         
-              
+
+    def forward(self,q,k,v,mask):
+        """
+        mask =  if we dont want to somewords to interact with other 
+        words we put their value to a small number.
+        """
+        query = self.w_q(q)
+        key = self.w_k(k)
+        value = self.w_v(v)
+        query = query.view(query.shape[0],query.shape[1],self.h,self.d_k).transpose(1,2)
+        key = key.view(key.shape[0],key.shape[1],self.h,self.d_k).transpose(1,2)
+        value = value.view(value.shape[0],value.shape[1],self.h,self.d_k).transpose(1,2)
+        
+        x, self.attention_scores= MultiheadAttentionblock.attention(query,key,value,mask,self.dropout)
+         #
+        x= x.transpose(1,2).contiguous().view(x.shape[0],-1,self.h*self.d_k)
+        #AS in the paper
+        return self.w_0(x)
+
+#Residual Connection the arrows in the encoder layers 
+class ResidualConnection(nn.Module):
+    """
+    connection is between add and the norm and the previus layer
+    """
+    def __init__(self,dropout):
+        super().__init__()
+        self.dropout = dropout 
+        self.norm = LayerNormalization(dropout)
+          
          
     
     
