@@ -145,12 +145,25 @@ class MultiheadAttentionblock(nn.Module):
 class ResidualConnection(nn.Module):
     """
     connection is between add and the norm and the previus layer
+
+    sublayer --> next layer
     """
     def __init__(self,dropout):
         super().__init__()
         self.dropout = dropout 
         self.norm = LayerNormalization(dropout)
-          
+    def forward(self,x,sublayer):
+        return x+self.dropout(sublayer(self.norm(x)))
+    
+#we will now create a Encoder block that contains the 1 multihead attention
+# 2 Add and norms and 1 feed forward.
+class EncoderBlock(nn.Module):
+    def __init__(self, self_attention: MultiheadAttentionblock, feed_forward_block:FeedForwardBlock,dropout:float) -> None:
+
+        super().__init__() 
+        self.self_attention = self_attention
+        self.feed_forward_block = feed_forward_block
+        self.residual_block = nn.ModuleList    
          
     
     
