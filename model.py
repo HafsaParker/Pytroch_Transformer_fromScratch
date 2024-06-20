@@ -158,13 +158,29 @@ class ResidualConnection(nn.Module):
 #we will now create a Encoder block that contains the 1 multihead attention
 # 2 Add and norms and 1 feed forward.
 class EncoderBlock(nn.Module):
-    def __init__(self, self_attention: MultiheadAttentionblock, feed_forward_block:FeedForwardBlock,dropout:float) -> None:
 
+    """
+    src_mask --> the mask that we want to apply to the unput of theencoder
+    bcz we want to hide the interaction of the padding word with the otehr word.
+
+    """
+    def __init__(self, self_attention: MultiheadAttentionblock, feed_forward_block:FeedForwardBlock,dropout:float) -> None:
+    
         super().__init__() 
         self.self_attention = self_attention
         self.feed_forward_block = feed_forward_block
-        self.residual_block = nn.ModuleList    
-         
+        self.residual_connections = nn.ModuleList([ResidualConnection(dropout)for _ in range(2)])  
+    def forward(self,x,src_mask):
+        #step 1 = x to multihead and ad and norms and combine the 2
+        #other x is comming from selfattention
+        #xxx is query key and value
+        #here wwe are calling forward func of the multihead attention
+        x = self.residual_connections[0](x,lambda x: self.self_attention(x,x,x,src_mask))
+        #step2 = feed forward
+        #this means the x value of upperlayer can be added to next layer.
+        x= self.residual_connections[1](x, self.feed_forward_block)
+        return x
+
     
     
         
