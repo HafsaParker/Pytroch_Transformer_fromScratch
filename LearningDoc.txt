@@ -1,2 +1,9 @@
 Positonal Embedding --> https://machinelearningmastery.com/a-gentle-introduction-to-positional-encoding-in-transformer-models-part-1/
 https://www.linkedin.com/pulse/deep-dive-positional-encodings-transformer-neural-network-ajay-taneja/
+
+LayerNormalization --> https://medium.com/@florian_algo/batchnorm-and-layernorm-2637f46a998b#:~:text=Difference%20between%20Batch%20Normalization%20and,all%20features%20within%20each%20sample.
+vanishing Gradient Problem --> https://www.engati.com/glossary/vanishing-gradient-problem#:~:text=exploding%20gradient%20problem%3F-,What%20is%20vanishing%20gradient%20problem%3F,layers%20to%20the%20earlier%20layers.
+ReLU Activation --> https://builtin.com/machine-learning/relu-activation-function#:~:text=What%20Is%20the%20ReLU%20Activation,positive%20part%20of%20its%20argument.
+Feed Forward Neural Network --> https://deepai.org/machine-learning-glossary-and-terms/feed-forward-neural-network
+Attention --> https://towardsdatascience.com/transformers-explained-visually-part-1-overview-of-functionality-95a6dd460452
+https://jalammar.github.io/illustrated-transformer/
