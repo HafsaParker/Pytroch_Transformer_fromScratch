@@ -107,7 +107,7 @@ class MultiheadAttentionblock(nn.Module):
         self.w_0 = nn.Linear(d_model,d_model)
     # Now we have to calculate the attention
     @staticmethod
-    def attention(query,key,value,mask,dropout,nn.Dropout):
+    def attention (self,query,key,value,mask,dropout,nn.Dropout):
         d_k  = query.shape[-1]
         #now we will apply the formula
         """
@@ -206,7 +206,7 @@ while q is comming fromt the decoder block. (Cross attention)
 cross_attention_block:MultiheadAttentionblock -> its same but we will give it diff params
 """    
 
-class DecoderBlock(nn.Module):
+class DecoderBlock(nn.ModuleList):
     def __init__(self, self_attention_block:MultiheadAttentionblock, cross_attention_block:MultiheadAttentionblock, feed_forward_block: FeedForwardBlock,dropout:float):
         super().__init__()
         self.self_attention_block = self_attention_block
