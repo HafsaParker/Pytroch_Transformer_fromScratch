@@ -46,22 +46,55 @@ class BilingualDataSet(Dataset):
         #coding tensors for the encoder and decoder input.
         # 1 sent = input_encoder 1 = input_decoder
         # 1 sent  = output decoder ==> label
-        #encoder_input = torch.cat(
-        #    [
-        #        self.sos_token,
-        #        torch.tens
-#
-#
-        #    ]
-#
-#
-        #)
-#
+        encoder_input = torch.cat(
+            [
+                self.sos_token,
+                torch.tensor(enc_input_tokens, dtype=torch.int64),
+                self.eos_token,
+                torch.tensor([self.pad_token]*enc_num_padding_tokens, dtype=torch.int64)
 
 
+            ]
+        )
 
+        #Decoder Input
+        decoder_input = torch.cat(
+            [
+                self.sos_token,
+                torch.tensor(dec_input_tokens,dtype=torch.int64),
+                torch.tensor([self.pad_token]*dec_input_tokens,dtype=torch.int64)
 
+            ]
 
+        )
+        label = torch.cat([
+            torch.tensor(dec_input_tokens,dtype=torch.int64),
+            self.eos_token,
+            torch.tensor([self.pad_token]*dec_num_padding_tokens,dtype=torch.int64)
+
+        ])
+        assert encoder_input.size(0)==self.seq_len
+        assert decoder_input.size(0) == self.seq_len
+        assert label.size(0) ==self.seq_len
+
+        #we want padding to reach the seq len
+        # but we have to remove the padding by masking
+        return {
+            "encoder_input": encoder_input, #(seq_len)
+            "decoder_input": decoder_input, #(seq_len)
+            "encoder_mask" : (encoder_input != self.pad_token).unsqueeze(0).unsqueeze(0).int(),
+            "decoder_mask" : (decoder_input!=self.pad_token).unsqueeze(0).unsqueeze(0).int() & casual_mask(decoder_input.size(0)),
+            "label" : label, #seq len
+            "src_len ": src_text,
+            "tgt_text": tgt_text
+        }
+def casual_mask(size):
+    mask = torch.triu(torch.ones(1,size,size),diagonal=1).type(torch.int) # this give all the diagonal value above the word
+    return mask == 0 
+
+        
+
+ 
 
 
 

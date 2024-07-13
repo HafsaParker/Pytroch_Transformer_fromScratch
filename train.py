@@ -8,7 +8,7 @@ from tokenizers.models import WordLevel
 from tokenizers.trainers import WordLevelTrainer
 from tokenizers.pre_tokenizers import Whitespace #split the words via white space
 from pathlib import Path
-
+from dataset import BilingualDataSet, casual_mask
 
 def get_all_sentence(ds, lang):
     """
@@ -59,3 +59,31 @@ def get_dataset(config):
     train_ds_size = int(0,9*len(ds_raw))
     val_ds_size = len(ds_raw)-train_ds_size
     train_ds_size,val_ds_size = random_split(ds_raw,[train_ds_size,val_ds_size])
+
+    train_ds = BilingualDataSet(train_ds,tokenizer_src,tokenizer_tgt,config['lang_src'],config["lang_tgt"],config["seq_len"])
+    val_ds = BilingualDataSet(val_ds_size,tokenizer_src,tokenizer_tgt,config['lang_src'],config["lang_tgt"],config["seq_len"])
+
+    #checking max seq len of source and target for train and val.
+    max_src_len = 0
+    max_tgt_len = 0
+    for item in ds_raw:
+        src_ids = tokenizer_src.encode(item["translation"][config['lang_src']]).ids
+        tgt_ids = tokenizer_src.encode(item["translation"][config['lang_tgt']]).ids
+        max_len_src = max(max_len_src,len(src_ids))
+        max_len_tgt = max(max_len_tgt,len(tgt_ids))
+    print(f"Max lenght of source sentence: {max_src_len}")
+    print(f"Max lenght of target sentence: {max_tgt_len}")
+
+    #data loaders
+    train_data_loaders =DataLoader(train_ds,batch_size=config['batch_size'],shuffle=True)
+    val_dataloader = DataLoader(val_ds,batch_size=1,shuffle=True)
+    return train_data_loaders,val_dataloader,tokenizer_src,tokenizer_tgt
+
+
+
+
+    
+
+
+
+
