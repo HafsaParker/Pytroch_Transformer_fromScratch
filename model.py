@@ -275,7 +275,7 @@ class Tranformer(nn.Module):
 
 #NOW WE HAVE TO COMBINE ALL THE BLOCKS TOGETHER
 def build_transformer(src_vocab_size,tgt_vocab_size,src_seq_len,tgt_seq_len,d_model=512,N:int = 6,h=8,dropout =0.1,d_ff = 2048) -> Tranformer:   
-    #Create e,bdedding ayer
+    #Create embdedding ayer
     src_embed = InputEmbeddings(d_model,src_vocab_size)
     tgt_embed = InputEmbeddings(d_model,tgt_vocab_size)
     #Create positional encoding layer
